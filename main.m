@@ -8,7 +8,7 @@ nPSC                   = 4;                                         % Number of 
 nZSC                   = 12;                                        % Number of zeros subcarriers
 nUSC                   = nDSC + nPSC;                               % Number of total used subcarriers
 K                      = nUSC + nZSC;                               % Number of total subcarriers
-nSym                   = 20;                                       % Number of OFDM symbols within one frame
+nSym                   = 50;                                       % Number of OFDM symbols within one frame
 deltaF                 = ofdmBW/nFFT;                               % Bandwidth for each subcarrier - include all used and unused subcarriers 
 Tfft                   = 1/deltaF;                                  % IFFT or FFT period = 6.4us
 Tgi                    = Tfft/4;                                    % Guard interval duration - duration of cyclic prefix - 1/4th portion of OFDM symbols = 1.6us
@@ -32,7 +32,7 @@ xp                     = sqrt(K)*ifft(dp);
 xp_cp                  = [xp(end-K_cp+1:end); xp];                  % Adding CP to the time domain preamble
 preamble_80211p        = repmat(xp_cp,1,2);                         % IEEE 802.11p preamble symbols (tow symbols)
 %% ------ Bits Modulation Technique------------------------------------------
-modu                      = 'QPSK';
+modu                      = '16QAM';
 Mod_Type                  = 1;              % 0 for BPSK and 1 for QAM 
 if(Mod_Type == 0)
     nBitPerSym            = 1;
@@ -68,17 +68,17 @@ Interleaver_Columns       = (nBitPerSym * nDSC * nSym) / Interleaver_Rows;
 % General Block Interleaver
 Random_permutation_Vector = randperm(nBitPerSym*nDSC*nSym); % Permutation vector
 %% -----------------Vehicular Channel Model Parameters--------------------------
-mobility                  = 'High';
+mobility                  = 'Very_High';
 ChType                    = 'VTV_SDWW';             % Channel model
 fs                        = K*deltaF;               % Sampling frequency in Hz, here case of 802.11p with 64 subcarriers and 156250 Hz subcarrier spacing
 fc                        = 5.9e9;                  % Carrier Frequecy in Hz.
-vel                       = 48;                    % Moving speed of user in km
+vel                       = 200;                    % Moving speed of user in km
 c                         = 3e8;                    % Speed of Light in m/s
-fD                        = 500;%(vel/3.6)/c*fc;         % Doppler freq in Hz
+fD                        = 1100;%(vel/3.6)/c*fc;         % Doppler freq in Hz
 rchan                     = ch_func.GenFadingChannel(ChType, fD, fs);
 %% Simulation Parameters 
-load('./samples_indices_100.mat');
-configuration = 'training'; % training or testing
+load('./samples_indices_18000.mat');
+configuration = 'testing'; % training or testing
 if (isequal(configuration,'training'))
     indices = training_samples;
     EbN0dB           = 40; 
@@ -91,7 +91,7 @@ end
 SNR_p                     = EbN0dB + 10*log10(K/nDSC) + 10*log10(K/(K + K_cp)) + 10*log10(nBitPerSym) + 10*log10(rate);
 SNR_p                     = SNR_p.';
 N0                        = Ep*10.^(-SNR_p/10);
-N_CH                      = size(indices,1);; 
+N_CH                      = size(indices,1); 
 N_SNR                     = length(SNR_p); 
 
 % Normalized mean square error (NMSE) vectors
@@ -231,14 +231,58 @@ for n_snr = 1:N_SNR
     toc;
 end 
 
-
+%% Load data from the first script
+%load('trans.mat','BER_scheme_Transformer')
+%load('trans1.mat','BER_scheme_Transformer1')
+%load('lstm.mat','BER_scheme_LSTM')
+%load('results_scriptTrans_RTV_EX1.mat', 'ERR_scheme_Transformer'); 
+%load('results_scriptRTV_EX1.mat','ERR_scheme_LSTM');
+%load('ber_data.mat','BER_GRU','BER_LSTM_MP', 'BER_AE')
+%%
 BER_Ideal                    = Ber_Ideal /(N_CH * nSym * nDSC * nBitPerSym);
 BER_DPA_TA                   = Ber_DPA_TA / (N_CH * nSym * nDSC * nBitPerSym);
-
+save('BER_DPA_TA', "BER_DPA_TA")
+save("BER_Ideal", "BER_Ideal")
+%figure,
+%p1 = semilogy(EbN0dB, BER_Ideal,'k-o','LineWidth',2);
+%hold on;
+%p2 = semilogy(EbN0dB, BER_DPA_TA,'k--o','LineWidth',2);
+%hold on;
+%p1 = semilogy(EbN0dB, BER_scheme_Transformer,'r-s','LineWidth',2);
+%hold on;
+%p2 = semilogy(EbN0dB, BER_scheme_LSTM,'c-*','LineWidth',2);
+%hold on;
+%p3 = semilogy(EbN0dB, BER_GRU,'g-d','LineWidth',2);
+%hold on;
+%p4 = semilogy(EbN0dB, BER_LSTM_MP,'m-v','LineWidth',2);
+%hold on;
+%p5 = semilogy(EbN0dB, BER_AE,'b-p','LineWidth',2);
+%hold on;
+%p6 = semilogy(EbN0dB, BER_scheme_Transformer1,'rd','LineWidth',2);
+%hold on;
+%grid on;
+%legend([p1(1),p2(1),p3(1),p4(1),p5(1),p6(1)],{'Transformer-DPA-TA','LSTM-DPA-TA(128)','DPA-GRU(10)','LSTM-MLP(128-40)','AE(20-10-20)','Transformer-DPA-TA (233)'});
+%xlabel('SNR(dB)');
+%ylabel('Bit Error Rate (BER)');
+%legend('Location', 'southwest');
+%xlim([min(EbN0dB), 30]);  % Set x-axis limits
 % NMSE Plot 
 Phf_H                         = Phf_H_Total/(N_CH);
 ERR_DPA_TA                    = Err_DPA_TA ./ (Phf_H * N_CH);
-     
+save('EER_DPA_TA', "ERR_DPA_TA")
+%figure,
+%p1 = semilogy(EbN0dB, ERR_DPA_TA,'k--o','LineWidth',2);
+%hold on;
+%p2 = semilogy(EbN0dB, ERR_scheme_Transformer,'r-s','LineWidth',2);
+%hold on;
+%p3 = semilogy(EbN0dB, ERR_scheme_LSTM,'g-d','LineWidth',2);
+%hold on;
+%grid on;
+
+%legend([p1(1),p2(1),p3(1)],{'DPA-TA','Transformer-DPA-TA', 'LSTM-DPA-TA'});
+%xlabel('SNR(dB)');
+%ylabel('Normalized Mean Sqaure Error (NMSE)');
+%legend('Location', 'best');
 
 if (isequal(configuration,'training'))
        

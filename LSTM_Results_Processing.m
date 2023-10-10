@@ -1,10 +1,10 @@
 clc;clearvars;close all; warning('off','all');
 
-mobility = 'High';
+mobility = 'Very_High';
 ChType = 'VTV_SDWW';
-modu = 'QPSK';
+modu = '16QAM';
 scheme = 'DPA_TA';
-testing_samples = 20;
+testing_samples = 2000;
 if(isequal(modu,'QPSK'))
 nBitPerSym       = 2; 
 elseif (isequal(modu,'16QAM'))
@@ -16,7 +16,7 @@ M                     = 2 ^ nBitPerSym; % QAM Modulation Order
 Pow                   = mean(abs(qammod(0:(M-1),M)).^2); % Normalization factor for QAM    
 load(['./',mobility,'_',ChType,'_',modu,'_simulation_parameters']);
 EbN0dB                    = (0:5:40)'; 
-nSym                      = 20;
+nSym                      = 50;
 constlen                  = 7;
 trellis                   = poly2trellis(constlen,[171 133]);
 tbl                       = 34;
@@ -60,8 +60,29 @@ for n_snr = 1:N_SNR
    toc;
 end
 Phf = Phf ./ testing_samples;
-ERR_scheme_LSTM = Err_scheme_LSTM ./ (testing_samples * Phf); 
-BER_scheme_LSTM = Ber_scheme_LSTM/ (testing_samples * nSym * 48 * nBitPerSym);
+ERR_opt_64blstm = Err_scheme_LSTM ./ (testing_samples * Phf); 
+BER_opt_64blstm = Ber_scheme_LSTM/ (testing_samples * nSym * 48 * nBitPerSym);
+
+%% Save the data in a .mat file
+save('64_bQlstm.mat', 'Phf', 'BER_opt_64blstm', 'ERR_opt_64blstm');
+%% Assuming you have already calculated Phf, ERR_scheme_DNN, and BER_scheme_DNN
+
+% Plot NMSE_scheme_DNN
+%NMSE_scheme_DNN = ERR_scheme_LSTM ./ Phf; % Calculate NMSE from ERR_scheme_DNN and Phf
+figure;
+plot(EbN0dB, ERR_opt_64blstm, 'r-s');
+xlabel('SNR (dB)');
+ylabel('Normalized Mean Squared Error (NMSE)');
+title('Normalized MSE Optimised LSTM vs SNR');
+grid on;
+
+% Plot BER_scheme_DNN
+figure;
+plot(EbN0dB, BER_opt_64blstm, 'g-d');
+xlabel('SNR (dB)');
+ylabel('Bit Error Rate (BER)');
+title('Bit Error Rate (BER\_scheme\Optimised_LSTM) vs SNR');
+grid on;
 
 
    
