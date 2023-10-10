@@ -1,13 +1,13 @@
 clc;clearvars;close all; warning('off','all');
 % Load pre-defined DNN Testing Indices
-load('./samples_indices_100.mat');
+load('./samples_indices_18000.mat');
 configuration = 'testing'; % training or testing
 % Define Simulation parameters
 nSC_In                    = 104;% 104
 nSC_Out                   = 96;
-nSym                      = 20;
-mobility                  = 'High';
-modu                      = 'QPSK';
+nSym                      = 50;
+mobility                  = 'Very_High';
+modu                      = '16QAM';
 ChType                    = 'VTV_SDWW';
 scheme                    = 'DPA_TA';
 
@@ -23,7 +23,6 @@ elseif(isequal(configuration,'testing'))
     EbN0dB           = 0:5:40;    
 end
 Dataset_size     = size(indices,1);
-
 
 
 SNR                       = EbN0dB.';
@@ -68,7 +67,8 @@ elseif(isequal(configuration,'testing'))
     Dataset_X(ppositions,2:end,:) = RPP;
     Dataset_X(ppositions + 52,2:end,:) = IPP;
     
-    Dataset_Y(1:48,:,:)  = real(True_Channels_Structure(dpositions,:,:));
+    Dataset_Y(1:48,:,:)  
+    = real(True_Channels_Structure(dpositions,:,:));
     Dataset_Y(49:96,:,:) = imag(True_Channels_Structure(dpositions,:,:));
 
     Dataset_X = permute(Dataset_X, [3, 2 ,1 ]);
@@ -79,6 +79,6 @@ elseif(isequal(configuration,'testing'))
     LSTM_Datasets.('Y_DataSubCarriers') =  Received_Symbols_FFT_Structure; 
 end
 
-save(['./',mobility,'_',ChType,'_',modu,'_',scheme,'_LSTM_',configuration,'_dataset_' num2str(EbN0dB(n_snr)),'.mat'],  'LSTM_Datasets');
+save(['./',mobility,'_',ChType,'_',modu,'_',scheme,'_BiLSTM_',configuration,'_dataset_' num2str(EbN0dB(n_snr)),'.mat'],  'LSTM_Datasets');
 
 end
